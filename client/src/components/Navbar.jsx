@@ -8,17 +8,20 @@ const Navbar = () => {
     const navigate = useNavigate();
 
     const {user} = useUser();
-    const {openSignIn} = useClerk();//.openSignIn;
-    
+    const {openSignIn} = useClerk();
+
   return (
     <div className='fixed z-5 w-full backdrop-blur-2xl flex justify-between items-center py-3 px-4 sm:px-20 xl:px-32'>
-        <img src={assets.logo} alt="Logo" className='w-32 sm:w-44 cursor-pointer' onClick={() => navigate('/')}/>
-
-
-        <button  onClick={openSignIn}className='flex justify-center items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors'>
-  Get Started <ArrowRight className='w-4 h-4'/>
-</button>
-
+       <img className='w-32 sm:w-44 cursor-pointer' src={assets.logo} alt='logo' onClick={()=>navigate("/")}/> 
+      {/*<div className='flex justify-center items-center gap-1 pt-1'><img className='w-7 sm:w-10 cursor-pointer' src={assets.favicon} alt='logo' onClick={()=>navigate("/")}/><span className='text-xl sm:text-3xl font-semibold text-primary'>Forge.ai</span></div>*/}
+      {
+      user ?
+        <UserButton/> 
+        :
+        (<button onClick={openSignIn} className='flex items-center gap-2 rounded-full text-sm cursor-pointer bg-primary text-white px-10 py-2.5'>
+            Get started <ArrowRight className='w-4 h-4'/>
+        </button>)  
+    }
     </div>
   )
 }
