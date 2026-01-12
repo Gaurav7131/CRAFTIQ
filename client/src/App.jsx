@@ -1,25 +1,35 @@
 import React from 'react'
-import { Routes,Route } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import WriteArticle from './pages/WriteArticle'
 import Layout from './pages/Layout'
 import Dashboard from './pages/Dashboard'
 import BlogTitles from './pages/BlogTitles'
-const App = () => {
+import GenerateImages from './pages/GenerateImages' // Fixed: Added the 's'
+import RemoveBackground from './pages/RemoveBackground' 
+import ReviewResume from './pages/ReviewResume'
+import RemoveObject from './pages/RemoveObject'
 
+const App = () => {
   return (
     <div>
       <Routes>
-        <Route path='/' element={<Home/>}/>
+        <Route path='/' element={<Home />} />
 
-        <Route path='/ai' element={<Layout/>}>
-          <Route index element={<Dashboard/>}/>
-          <Route path='/ai/write-article' element={<WriteArticle/>}/>
-          <Route path='/ai/blog-titles' element={<BlogTitles/>}/>
+        {/* Nested Routes for AI Suite */}
+        <Route path='/ai' element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path='write-article' element={<WriteArticle />} />
+          <Route path='blog-titles' element={<BlogTitles />} />
+          {/* Ensure path matches what you use in your sidebar/navigation */}
+          <Route path='generate-images' element={<GenerateImages />} /> 
+          <Route path='remove-background' element={<RemoveBackground />} />
+          <Route path='remove-object' element={<RemoveObject />} />
+          <Route path='review-resume' element={<ReviewResume />} />
         </Route>
       </Routes>
     </div>
-      )
+  )
 }
 
 export default App
