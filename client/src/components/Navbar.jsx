@@ -11,9 +11,9 @@ const Navbar = () => {
         <img src={assets.logo} alt="Logo" className='w-32 sm:w-44' onClick={() => navigate('/')}/>
 
 
-        <button className='flex justify-center items-center gap-1 pt-1'>
-            Get Started <ArrowRight className='w-4 h-4'/>
-        </button>
+        <button className='flex justify-center items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors'>
+  Get Started <ArrowRight className='w-4 h-4'/>
+</button>
 
     </div>
   )
