@@ -148,7 +148,7 @@ const Dashboard = () => {
         >
           <div>
             <p className='text-sm font-bold uppercase tracking-wider text-slate-400 mb-2'>Active Plan</p>
-            <h2 className={`text-4xl font-black capitalize ${isPremium ? 'bg-gradient-to-r from-fuchsia-600 to-purple-600 bg-clip-text text-transparent' : 'text-slate-800'}`}>
+            <h2 className={`text-4xl font-black capitalize ${isPremium ? 'bg-linear-to-r from-fuchsia-600 to-purple-600 bg-clip-text text-transparent' : 'text-slate-800'}`}>
               {isPremium ? 'Premium' : 'Free'}
             </h2>
           </div>

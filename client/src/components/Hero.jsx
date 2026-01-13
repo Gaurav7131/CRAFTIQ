@@ -14,7 +14,7 @@ const Hero = () => {
         <h1 className='text-3xl sm:text-5xl md:text-6xl 2xl:text-7xl font-semibold mx-auto leading-[1.2]'>
           Crafting Tomorrow's Content{' '}
           <span className='relative inline-block'>
-            <span className='bg-gradient-to-r from-blue-600 via-cyan-400 to-indigo-500 bg-[length:200%_auto] bg-clip-text text-transparent animate-pulse'>
+            <span className='bg-linear-to-r from-blue-600 via-cyan-400 to-indigo-500 bg-size-[200%_auto] bg-clip-text text-transparent animate-pulse'>
               Todays!
             </span>
             <span className='absolute -bottom-1 left-0 w-full h-[2px] bg-gradient-to-r from-blue-600 to-transparent'></span>
@@ -32,7 +32,7 @@ const Hero = () => {
           onClick={() => navigate('/ai')} 
           className='group relative flex items-center gap-2 bg-slate-900 text-white px-10 py-4 rounded-full font-medium overflow-hidden hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer shadow-lg'
         >
-          <span className='absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300'></span>
+          <span className='absolute inset-0 bg-linear-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300'></span>
           <span className='relative z-10 flex items-center gap-2'>
             Start Creating Now 
             <ArrowRight className='w-4 h-4 group-hover:translate-x-1 transition-transform' />

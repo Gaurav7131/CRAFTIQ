@@ -61,7 +61,7 @@ const CreationItem = ({ item }) => {
             {/* --- EXPANDABLE CONTENT SECTION --- */}
             <div 
                 className={`
-                    grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+                    grid transition-[grid-template-rows] duration-300 ease-in-out
                     ${expanded ? 'grid-rows-[1fr] opacity-100 mt-4 pt-4 border-t border-dashed border-gray-100' : 'grid-rows-[0fr] opacity-0'}
                 `}
             >
