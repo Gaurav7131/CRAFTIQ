@@ -199,7 +199,7 @@ const Sidebar = ({ sidebar, setSidebar }) => {
                             
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 rounded-md">
-                                    Free
+                                    Premium Plan
                                 </span>
                                 
                                 {/* 🔥 UPGRADE BUTTON */}
