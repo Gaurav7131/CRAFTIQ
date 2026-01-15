@@ -1,92 +1,98 @@
 import React, { useState } from 'react'
 import Markdown from 'react-markdown'
-import { ChevronDown, Clock, Image as ImageIcon, FileText } from 'lucide-react'
+import { FileText, Image as ImageIcon, ChevronDown } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const CreationItem = ({ item }) => {
+  
+  const [expanded, setExpanded] = useState(false);
 
-    const [expanded, setExpanded] = useState(false);
+  // Handle date safely
+  const dateString = item.createdAt || item.created_at;
+  const displayDate = dateString 
+    ? new Date(dateString).toLocaleDateString() 
+    : 'Just now';
 
-    // Helper to choose icon based on type
-    const getIcon = () => {
-        if (item.type === 'image') return <ImageIcon size={14} className="mr-1" />;
-        return <FileText size={14} className="mr-1" />;
-    };
-
-    return (
-        <div 
-            onClick={() => setExpanded(!expanded)} 
-            className={`
-                group p-5 w-full bg-white border border-gray-100 rounded-2xl cursor-pointer
-                transition-all duration-300 ease-in-out hover:shadow-lg hover:border-indigo-100 hover:-translate-y-1
-                ${expanded ? 'ring-2 ring-indigo-50 border-indigo-100' : ''}
-            `}
-        >
-            {/* --- HEADER SECTION --- */}
-            <div className='flex justify-between items-center gap-4'>
-                <div className="flex-1 min-w-0">
-                    <h2 className='text-base font-semibold text-slate-800 truncate pr-4 group-hover:text-indigo-600 transition-colors'>
-                        {item.prompt}
-                    </h2>
-                    
-                    <div className='flex items-center gap-3 mt-1 text-xs text-slate-400'>
-                        <span className='flex items-center bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100'>
-                            {getIcon()} {item.type}
-                        </span>
-                        <span className='flex items-center'>
-                            <Clock size={12} className="mr-1" />
-                            {new Date(item.createdAt).toLocaleDateString()}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Rotating Arrow & Badge */}
-                <div className="flex flex-col items-end gap-2 shrink-0">
-                     {/* Type Badge */}
-                     <span className={`
-                        px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider
-                        ${item.type === 'image' 
-                            ? 'bg-purple-50 text-purple-600 border border-purple-100' 
-                            : 'bg-blue-50 text-blue-600 border border-blue-100'}
-                     `}>
-                        {item.type}
-                     </span>
-                     
-                     {/* Arrow Icon */}
-                     <ChevronDown 
-                        className={`w-5 h-5 text-slate-300 transition-transform duration-300 ${expanded ? 'rotate-180 text-indigo-500' : ''}`} 
-                     />
-                </div>
-            </div>
-
-            {/* --- EXPANDABLE CONTENT SECTION --- */}
-            <div 
-                className={`
-                    grid transition-[grid-template-rows] duration-300 ease-in-out
-                    ${expanded ? 'grid-rows-[1fr] opacity-100 mt-4 pt-4 border-t border-dashed border-gray-100' : 'grid-rows-[0fr] opacity-0'}
-                `}
-            >
-                <div className="overflow-hidden min-h-0">
-                    {item.type === 'image' ? (
-                        <div className="relative rounded-xl overflow-hidden bg-slate-50 border border-slate-100 group-hover:shadow-md transition-shadow">
-                            <img 
-                                src={item.content} 
-                                alt='Generated content' 
-                                className='w-full h-auto object-cover max-h-96 transform transition-transform duration-700 hover:scale-105' 
-                                loading="lazy"
-                            />
-                        </div>
-                    ) : (
-                        <div className='p-4 bg-slate-50 rounded-xl text-sm text-slate-700 leading-relaxed border border-slate-100'>
-                            <div className='prose prose-sm prose-indigo max-w-none'>
-                                <Markdown>{item.content}</Markdown>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
+  return (
+    <motion.div 
+      layout 
+      onClick={() => setExpanded(!expanded)} 
+      whileHover={{ scale: 1.01, backgroundColor: "#f8fafc" }} 
+      whileTap={{ scale: 0.99 }} 
+      className='p-5 max-w-5xl bg-white border border-gray-200 rounded-xl cursor-pointer shadow-sm hover:shadow-md transition-colors'
+    >
+      <motion.div layout="position" className='flex justify-between items-center gap-4'>
+        
+        <div className='flex items-center gap-4 min-w-0'>
+          
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 
+            ${item.type === 'image' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+            {item.type === 'image' ? <ImageIcon size={20}/> : <FileText size={20}/>}
+          </div>
+          
+          <div className='min-w-0'>
+            <h2 className='font-semibold text-slate-800 text-base truncate pr-4'>{item.prompt}</h2>
+            <p className='text-slate-500 text-xs mt-0.5 font-medium'>
+               <span className='capitalize'>{item.type}</span> • {displayDate}
+            </p>
+          </div>
         </div>
-    )
+
+        <div className='flex items-center gap-3 shrink-0'>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize border hidden sm:inline-block
+                ${item.type === 'image' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}
+            `}>
+               {item.type}
+            </span>
+
+            <motion.div
+                animate={{ rotate: expanded ? 180 : 0 }}
+                transition={{ duration: 0.3 }}
+                className="text-gray-400"
+            >
+                <ChevronDown size={20} />
+            </motion.div>
+        </div>
+
+      </motion.div>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className='mt-4 pt-4 border-t border-gray-100'>
+               {item.type === 'image' ? (
+                 <motion.div 
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className='flex justify-center bg-slate-50 p-4 rounded-xl border border-slate-100'
+                 >
+                    <img src={item.content} alt="Generated" className='max-w-full max-h-[400px] object-cover rounded-lg shadow-sm' />
+                 </motion.div>
+               ) : (
+                 <motion.div 
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className='text-slate-700 prose prose-sm max-w-none bg-slate-50 p-5 rounded-xl border border-slate-100'
+                 >
+                    <div className='reset-tw'>
+                       <Markdown>{item.content}</Markdown>
+                    </div>
+                 </motion.div>
+               )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
 }
 
 export default CreationItem
