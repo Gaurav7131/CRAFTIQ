@@ -1,10 +1,15 @@
-import React from 'react'
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { assets } from '../assets/assets';
 import { ArrowRight, PlayCircle } from 'lucide-react';
 
 const Hero = () => {
   const navigate = useNavigate();
+
+  // Function to handle the redirect to the YouTube video
+  const handleWatchDemo = () => {
+    window.open('https://youtu.be/_QEQ2JpMjoU?si=grfYk2UM0uEEkQIp', '_blank');
+  };
 
   return (
     <div className='px-4 sm:px-20 xl:px-32 relative flex flex-col w-full items-center justify-center bg-[url(/gradientBackground.png)] bg-cover bg-no-repeat min-h-screen'>
@@ -39,12 +44,13 @@ const Hero = () => {
           </span>
         </button>
 
-        {/* Watch Demo Button */}
+        {/* Watch Demo Button - Updated with onClick handler */}
         <button 
+          onClick={handleWatchDemo}
           className='flex items-center gap-2 bg-white text-slate-700 px-10 py-4 rounded-full font-medium border border-slate-200 hover:bg-slate-50 hover:border-blue-400 hover:text-blue-600 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer shadow-sm'
         >
-          <PlayCircle className='w-5 h-5 text-blue-500' />
-          Watch Demo
+          <PlayCircle className='w-5 h-5 text-blue-500 ' />
+          Watch Demo 
         </button>
       </div>
 
