@@ -1,5 +1,6 @@
-import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import React, { useEffect } from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from '@clerk/clerk-react'
 
 // Page Imports
 import Home from './pages/Home'
@@ -14,6 +15,21 @@ import ReviewResume from './pages/ReviewResume'
 import Community from './pages/Community'
 
 const App = () => {
+  // 1. Get Auth State
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+
+  // 2. Debugging: Check Token (Optional)
+  useEffect(() => {
+    if (isSignedIn) {
+      getToken().then((token) => console.log("Current User Token:", token));
+    }
+  }, [isSignedIn, getToken]);
+
+  // 3. Show a loading screen while Clerk initializes
+  if (!isLoaded) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+
   return (
     <div>
       <Routes>
@@ -21,11 +37,11 @@ const App = () => {
         <Route path='/' element={<Home />} />
 
         {/* Protected AI Suite Routes 
-            The <Layout /> component should handle the Sidebar and Authentication checks.
-            Access these via /ai, /ai/write-article, etc.
+            IMPORTANT: For these children to show, your <Layout /> 
+            must contain an <Outlet /> tag.
         */}
-        <Route path='/ai' element={<Layout />}>
-          <Route index element={<Dashboard />} /> {/* Default route for /ai */}
+        <Route path='/ai' element={isSignedIn ? <Layout /> : <Navigate to="/" />}>
+          <Route index element={<Dashboard />} />
           <Route path='write-article' element={<WriteArticle />} />
           <Route path='blog-titles' element={<BlogTitles />} />
           <Route path='generate-images' element={<GenerateImages />} />
@@ -35,6 +51,8 @@ const App = () => {
           <Route path='community' element={<Community />} />
         </Route>
 
+        {/* Catch-all for 404s */}
+        <Route path='*' element={<div>Page Not Found</div>} />
       </Routes>
     </div>
   )
