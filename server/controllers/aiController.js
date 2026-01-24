@@ -6,9 +6,7 @@ import { v2 as cloudinary } from "cloudinary";
 import FormData from "form-data";
 import { Readable } from "stream";
 import "dotenv/config";
-import fs from "fs";
-import * as pdfLib from "pdf-parse";
-const pdf = pdfLib.default; //
+
 
 // 1. INITIALIZE THE AI CLIENT (This was likely missing or configured wrong)
 const AI = new OpenAI({
