@@ -13,6 +13,7 @@ import RemoveBackground from './pages/RemoveBackground'
 import RemoveObject from './pages/RemoveObject'
 import ReviewResume from './pages/ReviewResume'
 import Community from './pages/Community'
+import { Toaster } from 'react-hot-toast'
 
 const App = () => {
   // 1. Get Auth State
@@ -32,6 +33,7 @@ const App = () => {
 
   return (
     <div>
+      <Toaster/>
       <Routes>
         {/* Public Landing Page */}
         <Route path='/' element={<Home />} />

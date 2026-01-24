@@ -5,92 +5,131 @@ import axios from "axios";
 import { v2 as cloudinary } from "cloudinary";
 import FormData from "form-data";
 import { Readable } from "stream";
+import "dotenv/config";
+import fs from "fs";
+import * as pdfLib from "pdf-parse";
+const pdf = pdfLib.default; //
 
+// 1. INITIALIZE THE AI CLIENT (This was likely missing or configured wrong)
 const AI = new OpenAI({
-    apiKey: process.env.GEMINI_API_KEY,
-    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
+    apiKey: process.env.GEMINI_API_KEY, // Make sure this is in your .env file
+    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai" // Required for Gemini
 });
 
-// ==========================================
-// 1. GENERATE ARTICLE
-// ==========================================
 export const generateArticle = async (req, res) => {
-    try {
-        const { userId } = req.auth; 
-        const { prompt, length } = req.body;
-        const plan = req.plan;
-        const free_usage = req.free_usage;
+  try {
+    const { userId } = req.auth;
+    const { prompt, length } = req.body;
+    const plan = req.plan;
+    const free_usage = req.free_usage;
 
-        if (plan !== 'premium' && free_usage >= 10) {
-            return res.json({ success: false, message: "Limit reached. Upgrade to continue!" });
-        }
-
-        const response = await AI.chat.completions.create({
-            model: "gemini-2.5-flash",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.7,
-            max_completion_tokens: length,
-        });
-
-        const content = response.choices[0].message.content;
-
-        await sql`INSERT INTO creations (user_id, prompt, content, type) 
-                  VALUES (${userId}, ${prompt}, ${content}, 'article')`;
-
-        if (plan !== 'premium') {
-            await clerkClient.users.updateUserMetadata(userId, {
-                privateMetadata: { free_usage: free_usage + 1 }
-            });
-        }
-
-        return res.status(200).json({ success: true, content });
-
-    } catch (error) {
-        console.error("❌ Article Generator Error:", error.message);
-        return res.status(500).json({ success: false, message: error.message });
+    if (plan !== "premium" && free_usage >= 10) {
+      return res.json({
+        succes: false,
+        message: "Limit reached. Upgrade to continue.",
+      });
     }
-}
+
+    const response = await AI.chat.completions.create({
+      model: "gemini-2.5-flash",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: length,
+    });
+
+    const content = response.choices[0].message.content;
+
+    await sql` INSERT INTO creations (user_id, prompt, content, type) VALUES (${userId}, ${prompt}, ${content}, 'article') `;
+
+    if (plan !== "premium") {
+      await clerkClient.users.updateUserMetadata(userId, {
+        privateMetadata: {
+          free_usage: free_usage + 1,
+        },
+      });
+    }
+
+    res.json({ success: true, content });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ success: false, message: error.message });
+  }
+};
 
 
 // ==========================================
 // 2. GENERATE BLOG TITLE
 // ==========================================
 export const generateBlogTitle = async (req, res) => {
+    // 1. DEBUG LOGGING START
+    console.log("🚀 Starting Request...");
+    
     try {
-        const { userId } = req.auth; 
-        const { prompt, length } = req.body;
-        const plan = req.plan;
-        const free_usage = req.free_usage;
+        // CHECK AUTH
+        if (!req.auth?.userId) throw new Error("Missing userId in req.auth");
+        const { userId } = req.auth;
+        const { prompt } = req.body;
+        console.log(`👤 User: ${userId}, Prompt: ${prompt}`);
 
-        if (plan !== 'premium' && free_usage >= 10) {
-            return res.json({ success: false, message: "Limit reached. Upgrade to continue!" });
-        }
+        // CHECK AI CLIENT
+        if (!AI) throw new Error("AI Client is undefined");
 
-        const response = await AI.chat.completions.create({
-            model: "gemini-2.0-flash",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.7,
-            max_completion_tokens: 200,
-        });
-
-        const content = response.choices[0].message.content;
-
-        await sql`INSERT INTO creations (user_id, prompt, content, type) 
-                  VALUES (${userId}, ${prompt}, ${content}, 'blog-title')`;
-
-        if (plan !== 'premium') {
-            await clerkClient.users.updateUserMetadata(userId, {
-                privateMetadata: { free_usage: free_usage + 1 }
+        // 2. TRY AI GENERATION
+        console.log("🤖 Calling Gemini...");
+        let content;
+        try {
+            const response = await AI.chat.completions.create({
+                model: "gemini-2.5-flash",
+                messages: [
+                    { role: "system", content: "You are an expert copywriter." },
+                    { role: "user", content: `Generate 5 blog titles for: ${prompt}` }
+                ],
+                max_tokens: 500,
             });
+            content = response.choices?.[0]?.message?.content;
+            if (!content) throw new Error("AI returned empty content (Safety Filter?)");
+        } catch (aiError) {
+            console.error("❌ AI CALL FAILED:", aiError);
+            return res.status(500).json({ success: false, message: "AI Generation Failed: " + aiError.message });
         }
 
+        // 3. TRY DATABASE INSERT
+        console.log("💾 Saving to DB...");
+        try {
+            await sql`INSERT INTO creations (user_id, prompt, content, type) 
+                      VALUES (${userId}, ${prompt}, ${content}, 'blog-title')`;
+        } catch (dbError) {
+            console.error("❌ DATABASE FAILED:", dbError);
+            return res.status(500).json({ success: false, message: "Database Error: " + dbError.message });
+        }
+
+        // 4. TRY CLERK UPDATE
+        console.log("👤 Updating Clerk...");
+        try {
+            if (req.plan !== 'premium') {
+                await clerkClient.users.updateUserMetadata(userId, {
+                    privateMetadata: { free_usage: (req.free_usage || 0) + 1 }
+                });
+            }
+        } catch (clerkError) {
+            console.error("❌ CLERK FAILED:", clerkError);
+            // Don't block the response if just Clerk fails
+        }
+
+        console.log("✅ Success!");
         return res.status(200).json({ success: true, content });
 
     } catch (error) {
-        console.error("❌ Blog Title Generator Error:", error.message);
+        console.error("❌ UNEXPECTED CRASH:", error);
         return res.status(500).json({ success: false, message: error.message });
     }
 }
+
 
 
 // ==========================================
@@ -205,3 +244,109 @@ export const generateImage = async (req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 }
+
+
+
+export const removeImageBackground = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+    const image = req.file;
+    const plan = req.plan;
+
+    if (plan !== "premium") {
+      return res.json({
+        succes: false,
+        message: "This feature is only available for premium subscriptions",
+      });
+    }
+
+    const { secure_url } = await cloudinary.uploader.upload(image.path, {
+      transformation: [
+        {
+          effect: "background_removal",
+          background_removal: "remove_the_background",
+        },
+      ],
+    });
+
+    await sql` INSERT INTO creations (user_id, prompt, content, type) VALUES (${userId}, 'Remove background from image', ${secure_url}, 'image') `;
+
+    res.json({ success: true, content: secure_url });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+export const removeImageObject = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+    const { object } = req.body;
+    const image = req.file;
+    const plan = req.plan;
+
+    if (plan !== "premium") {
+      return res.json({
+        succes: false,
+        message: "This feature is only available for premium subscriptions",
+      });
+    }
+
+    const { public_id } = await cloudinary.uploader.upload(image.path);
+
+    const imageUrl = cloudinary.url(public_id, {
+      transformation: [{ effect: `gen_remove:${object}` }],
+      resource_type: "image",
+    });
+
+    await sql` INSERT INTO creations (user_id, prompt, content, type) VALUES (${userId}, ${`Removed ${object} from image`}, ${imageUrl}, 'image') `;
+
+    res.json({ success: true, content: imageUrl });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+export const resumeReview = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+    const resume = req.file;
+    const plan = req.plan;
+
+    if (plan !== "premium") {
+      return res.json({
+        succes: false,
+        message: "This feature is only available for premium subscriptions",
+      });
+    }
+
+    if (resume.size > 5 * 1024 * 1024) {
+      return res.json({
+        success: false,
+        message: "Resume file size exceeds allowed size (5MB).",
+      });
+    }
+
+    const dataBuffer = fs.readFileSync(resume.path);
+    const pdfData = await pdf(dataBuffer);
+
+    const prompt = `Review the following resume and provide constructive feedback on its strengths, weaknesses, and areas for improvement. Resume Content:\n\n${pdfData.text}`;
+
+    const response = await AI.chat.completions.create({
+      model: "gemini-2.0-flash",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+      max_tokens: 1000,
+    });
+
+    const content = response.choices[0].message.content;
+
+    await sql` INSERT INTO creations (user_id, prompt, content, type) VALUES (${userId}, 'Review the uploaded resume', ${content}, 'resume-review') `;
+
+    res.json({ success: true, content });
+  } catch (error) {
+    console.log(error.message);
+    res.json({ success: false, message: error.message });
+  }
+};
