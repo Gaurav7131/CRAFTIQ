@@ -1,9 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
-import { clerkMiddleware } from '@clerk/express'; 
+import { clerkMiddleware, requireAuth } from '@clerk/express'; 
 import aiRouter from './routes/aiRoutes.js'; 
 import connectCloudinary from './configs/Cloudinary.js'; // Ensure the 'C' matches your filename
+import userRouter from "./routes/userRoutes.js";
+
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -20,7 +22,10 @@ connectCloudinary();
 
 // 4. Routes
 app.get('/', (req, res) => res.send('Server is Live!'));
-app.use('/api/ai', aiRouter);
+app.use(requireAuth());
+
+app.use("/api/ai", aiRouter);
+app.use("/api/user", userRouter);
 
 // 5. Start Server
 app.listen(port, () => {

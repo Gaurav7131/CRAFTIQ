@@ -6,7 +6,13 @@ import { v2 as cloudinary } from "cloudinary";
 import FormData from "form-data";
 import { Readable } from "stream";
 import "dotenv/config";
-
+import fs from 'fs/promises'; 
+//port{ createRequire } from 'module';
+import pdf from 'pdf-parse-fork'; // No 'require' or 'createRequire' needed for this one!
+ 
+// Setup require to handle the pdf-parse CommonJS module
+//nst require = createRequire(import.meta.url);
+//nst pdf = require('pdf-parse');
 
 // 1. INITIALIZE THE AI CLIENT (This was likely missing or configured wrong)
 const AI = new OpenAI({
@@ -143,21 +149,6 @@ export const generateBlogTitle = async (req, res) => {
 // ==========================================
 // 3. GENERATE IMAGE (DIAGNOSTIC MODE)
 // ==========================================
-const streamUpload = (buffer) => {
-    return new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-            { folder: "ai-generated" },
-            (error, result) => {
-                if (result) {
-                    resolve(result);
-                } else {
-                    reject(error);
-                }
-            }
-        );
-        Readable.from(buffer).pipe(stream);
-    });
-};
 
 // ==========================================
 // 3. GENERATE IMAGE (FIX: FORCE IMAGE TYPE)
@@ -243,11 +234,11 @@ export const generateImage = async (req, res) => {
     }
 }
 
-
-
+//====================================================Remove Image bg===================================================================
+//=====================================================================================================================================
 export const removeImageBackground = async (req, res) => {
   try {
-    const { userId } = req.auth();
+    const { userId } = req.auth;
     const image = req.file;
     const plan = req.plan;
 
@@ -276,9 +267,12 @@ export const removeImageBackground = async (req, res) => {
   }
 };
 
+//================================remove Image Object=====================================================================
+//=======================================================================================================================
+
 export const removeImageObject = async (req, res) => {
   try {
-    const { userId } = req.auth();
+    const { userId } = req.auth;
     const { object } = req.body;
     const image = req.file;
     const plan = req.plan;
@@ -306,45 +300,86 @@ export const removeImageObject = async (req, res) => {
   }
 };
 
+////================Review Resume=========================================================
+//==============================================================================================
+
 export const resumeReview = async (req, res) => {
   try {
-    const { userId } = req.auth();
+    const { userId } = req.auth;
     const resume = req.file;
     const plan = req.plan;
 
+    // Validation Checks
     if (plan !== "premium") {
       return res.json({
-        succes: false,
+        success: false,
         message: "This feature is only available for premium subscriptions",
       });
     }
 
-    if (resume.size > 5 * 1024 * 1024) {
-      return res.json({
-        success: false,
-        message: "Resume file size exceeds allowed size (5MB).",
-      });
+    if (!resume) {
+      return res.json({ success: false, message: "No resume file uploaded." });
     }
 
-    const dataBuffer = fs.readFileSync(resume.path);
-    const pdfData = await pdf(dataBuffer);
+    // 2. Read the file into a buffer first
+    // 1. Read the file
+const dataBuffer = await fs.readFile(resume.path);
 
-    const prompt = `Review the following resume and provide constructive feedback on its strengths, weaknesses, and areas for improvement. Resume Content:\n\n${pdfData.text}`;
+// 2. ROBUST PARSING WITH ERROR LOGGING
+let pdfData;
+try {
+    // We use the require'd pdf-parse function
+    // Converting buffer to a clean Uint8Array often fixes "corruption" errors
+    const uint8Array = new Uint8Array(dataBuffer);
+    
+    // Resolve the function correctly
+    const parser = (typeof pdf === 'function') ? pdf : pdf.default;
+    
+    if (typeof parser !== 'function') {
+        throw new Error("Library import failed - check your require('pdf-parse') line");
+    }
+
+    pdfData = await parser(dataBuffer);
+
+    if (!pdfData || !pdfData.text) {
+        throw new Error("PDF was read but no text was extracted.");
+    }
+} catch (parseError) {
+    console.error("DEBUG: PDF Parsing detailed error:", parseError.message);
+    
+    // Fallback: If the PDF is actually an image (scanned), pdf-parse cannot read it.
+    return res.json({ 
+        success: false, 
+        message: "Could not read text from PDF. Please ensure it is a text-based PDF and not a scanned image." 
+    });
+}
+
+    // 4. AI Interaction
+    const prompt = `Review the following resume and provide constructive feedback on its strengths, weaknesses, and areas for improvement. Format the response in clear Markdown. Resume Content:\n\n${pdfData.text}`;
 
     const response = await AI.chat.completions.create({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
-      max_tokens: 1000,
+      max_tokens: 1500,
     });
 
     const content = response.choices[0].message.content;
 
-    await sql` INSERT INTO creations (user_id, prompt, content, type) VALUES (${userId}, 'Review the uploaded resume', ${content}, 'resume-review') `;
+    // 5. Database Persistence
+    await sql` 
+      INSERT INTO creations (user_id, prompt, content, type) 
+      VALUES (${userId}, 'Review the uploaded resume', ${content}, 'resume-review') 
+    `;
+
+    // 6. Cleanup
+    try { await fs.unlink(resume.path); } catch (e) {}
 
     res.json({ success: true, content });
+
   } catch (error) {
-    console.log(error.message);
+    if (req.file) { try { await fs.unlink(req.file.path); } catch (e) {} }
+    console.error("Resume Review Error:", error.message);
     res.json({ success: false, message: error.message });
   }
 };
